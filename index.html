@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ניהול משמרות – גינקולוגיה</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Segoe UI,Arial,sans-serif;background:#f0f4f8;min-height:100vh;direction:rtl}
+  .header{background:linear-gradient(135deg,#1a3c5e,#2d6a9f);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .header h1{font-size:17px;font-weight:700}
+  .header .sub{font-size:11px;opacity:.85;margin-top:2px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .tab{padding:7px 14px;border-radius:8px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-weight:600;cursor:pointer;font-size:13px}
+  .tab.active{background:#fff;color:#1a3c5e}
+  .container{padding:18px 14px;max-width:1100px;margin:0 auto}
+  .card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:16px}
+  .card h2{color:#1a3c5e;font-size:15px;margin-bottom:12px}
+  input,select{padding:9px 12px;border-radius:8px;border:1.5px solid #c7d8ea;font-size:14px;width:100%}
+  .btn{padding:10px 18px;border:none;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;color:#fff}
+  .btn-blue{background:#1a3c5e}.btn-green{background:#27ae60}.btn-red{background:#e74c3c}.btn-google{background:#db4437}
+  .btn:disabled{background:#aaa;cursor:not-allowed}
+  .btn-full{width:100%;padding:12px;font-size:15px;margin-top:8px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+  .staff-row{display:flex;align-items:center;gap:8px;background:#f7f9fc;border-radius:8px;padding:8px 12px;margin-bottom:6px}
+  .staff-name{flex:1;font-weight:600;color:#1a3c5e;font-size:14px}
+  .staff-email{flex:1;color:#555;font-size:13px}
+  .success{color:#27ae60;font-weight:700;font-size:13px;margin-top:8px}
+  .screen{display:none}.screen.active{display:block}
+  /* Grid */
+  .grid-wrap{overflow-x:auto}
+  .grid{display:grid;gap:3px}
+  .grid-header{background:#1a3c5e;border-radius:7px;padding:7px 4px;color:#fff;font-weight:700;font-size:11px;text-align:center}
+  .shift-label{border-radius:7px;padding:6px 4px;font-weight:700;font-size:12px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center}
+  .shift-cell{background:#fff;border-radius:7px;padding:5px;min-height:75px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+  .tag{border-radius:5px;padding:2px 6px;font-size:10px;cursor:pointer;font-weight:600;color:#fff;display:inline-block;margin:2px}
+  .log-item{font-size:13px;padding:2px 0}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .legend-item{display:flex;align-items:center;gap:5px;background:#fff;border-radius:8px;padding:4px 10px;font-size:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .summary-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+  .summary-item{background:#f0f4f8;border-radius:7px;padding:5px 10px;font-size:12px}
+  .nav-btns{display:flex;gap:6px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🏥 ניהול משמרות – גינקולוגיה</h1>
+    <div class="sub" id="gmailLabel"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showScreen('setup')">⚙️ הגדרות</button>
+    <button class="tab" onclick="showScreen('team')">👥 צוות</button>
+    <button class="tab" onclick="showScreen('schedule')">📅 לוח משמרות</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- SETUP -->
+  <div id="screen-setup" class="screen active">
+    <h2 style="color:#1a3c5e;margin-bottom:16px">⚙️ הגדרת Gmail API</h2>
+    <div class="card">
+      <h2>שלב 1 – הזן Client ID</h2>
+      <input id="clientIdInput" placeholder="xxxx.apps.googleusercontent.com" style="margin-bottom:10px"/>
+      <button class="btn btn-blue btn-full" onclick="saveClientId()">💾 שמור Client ID</button>
+      <div class="success" id="cidSaved"></div>
+    </div>
+    <div class="card">
+      <h2>שלב 2 – התחבר עם Gmail</h2>
+      <div id="gmailStatus" style="color:#999;font-size:14px;margin-bottom:10px">לא מחובר</div>
+      <button class="btn btn-google btn-full" onclick="signIn()">🔐 התחבר עם Google</button>
+    </div>
+    <div class="card" style="background:#fffbea;border:1px solid #f9e79f">
+      <h2 style="color:#b7950b">⚠️ Authorized JavaScript origins</h2>
+      <p style="font-size:13px;color:#555;line-height:1.8">
+        ב-Google Cloud Console → Clients → ערוך את ה-OAuth Client ID שלך<br/>
+        תחת <b>Authorized JavaScript origins</b> הוסף את הכתובת שבה קובץ זה רץ.<br/>
+        אם פותחים מקומית: <code>http://localhost</code> או <code>file://</code> לא נתמכים –<br/>
+        <b>השתמש בשרת מקומי פשוט:</b><br/>
+        <code>python -m http.server 8080</code><br/>
+        ואז הוסף: <code>http://localhost:8080</code>
+      </p>
+    </div>
+  </div>
+
+  <!-- TEAM -->
+  <div id="screen-team" class="screen">
+    <h2 style="color:#1a3c5e;margin-bottom:16px">👥 ניהול צוות</h2>
+    <div class="card">
+      <h2>שם מנהלת מחלקה</h2>
+      <div class="row">
+        <input id="managerInput" placeholder="הזיני את שמך" style="flex:1"/>
+        <button class="btn btn-blue" onclick="verifyManager()">אישור</button>
+      </div>
+      <div class="success" id="managerOk"></div>
+    </div>
+    <div class="card">
+      <h2>רשימת צוות (<span id="staffCount">0</span>)</h2>
+      <div id="staffList"></div>
+      <div id="addStaffSection" style="display:none;border-top:1px solid #e0e8f0;padding-top:12px;margin-top:8px">
+        <div style="font-weight:700;color:#1a3c5e;margin-bottom:8px">הוספת עובד</div>
+        <div class="row">
+          <input id="newName" placeholder="שם" style="flex:1"/>
+          <input id="newEmail" placeholder="מייל" type="email" style="flex:1"/>
+          <button class="btn btn-green" onclick="addStaff()">+ הוסף</button>
+        </div>
+        <button class="btn btn-blue btn-full" onclick="saveTeam()">💾 שמור צוות</button>
+        <div class="success" id="teamSaved"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div id="screen-schedule" class="screen">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <h2 style="color:#1a3c5e;margin:0">📅 לוח משמרות</h2>
+      <div class="nav-btns">
+        <button class="btn btn-blue" id="btnWeek" onclick="setView('week')" style="padding:6px 12px;font-size:13px">שבועי</button>
+        <button class="btn" id="btnBiweek" onclick="setView('biweek')" style="padding:6px 12px;font-size:13px;background:#fff;color:#2d6a9f;border:1.5px solid #2d6a9f">דו-שבועי</button>
+        <button class="btn" onclick="shiftWeek(-1)" style="padding:6px 12px;font-size:13px;background:#fff;color:#333;border:1.5px solid #ccc">◀</button>
+        <button class="btn" onclick="shiftWeek(1)" style="padding:6px 12px;font-size:13px;background:#fff;color:#333;border:1.5px solid #ccc">▶</button>
+      </div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="dot" style="background:#f39c12"></span><b>בוקר</b> 07:00–15:00</div>
+      <div class="legend-item"><span class="dot" style="background:#8e44ad"></span><b>ערב</b> 15:00–23:00</div>
+      <div class="legend-item"><span class="dot" style="background:#2980b9"></span><b>לילה</b> 23:00–07:00</div>
+    </div>
+    <div class="grid-wrap"><div class="grid" id="schedGrid"></div></div>
+    <div class="row" style="margin-top:18px">
+      <button class="btn btn-blue" style="flex:1;padding:12px;font-size:14px" onclick="saveSchedule()">💾 שמור לוח</button>
+      <button class="btn btn-green" id="sendBtn" style="flex:1;padding:12px;font-size:14px" onclick="sendInvites()">📨 שלח זימונים</button>
+    </div>
+    <div class="success" id="schedSaved"></div>
+    <div id="sendLog" style="margin-top:14px;display:none" class="card"></div>
+    <div id="summaryWrap" style="margin-top:14px;display:none" class="card">
+      <div style="font-weight:700;color:#1a3c5e;margin-bottom:8px">סיכום שיבוצים</div>
+      <div class="summary-wrap" id="summaryItems"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SHIFTS=[
+  {key:"morning",label:"בוקר",time:"07:00–15:00",startH:7,endH:15,color:"#f39c12",bg:"#fef9e7",border:"#f9e79f"},
+  {key:"evening",label:"ערב",time:"15:00–23:00",startH:15,endH:23,color:"#8e44ad",bg:"#f5eef8",border:"#d7bde2"},
+  {key:"night",label:"לילה",time:"23:00–07:00",startH:23,endH:7,color:"#2980b9",bg:"#eaf2fb",border:"#a9cce3"},
+];
+let staff=[],schedule={},managerVerified=false,managerName="",accessToken="",gmailUser="";
+let viewMode="week",weekStart=getMonday(new Date());
+
+function getMonday(d){const x=new Date(d);x.setDate(x.getDate()-x.getDay());return x;}
+function dateKey(d){return d.toISOString().slice(0,10);}
+function formatDate(d){return d.toLocaleDateString("he-IL",{weekday:"short",day:"2-digit",month:"2-digit"});}
+function pad(n){return String(n).padStart(2,"0");}
+function uid(){return Math.random().toString(36).slice(2)+Date.now();}
+
+// Init
+window.onload=()=>{
+  staff=JSON.parse(localStorage.getItem("gynStaff")||"[]");
+  managerName=localStorage.getItem("gynManager")||"";
+  schedule=JSON.parse(localStorage.getItem("gynSchedule")||"{}");
+  const cid=localStorage.getItem("gynClientId")||"";
+  if(cid)document.getElementById("clientIdInput").value=cid;
+  if(managerName){document.getElementById("managerInput").value=managerName;}
+  renderStaff();renderGrid();
+};
+
+function showScreen(s){
+  document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+  document.getElementById("screen-"+s).classList.add("active");
+  document.querySelectorAll(".tab").forEach((t,i)=>{
+    t.classList.toggle("active",["setup","team","schedule"][i]===s);
+  });
+  if(s==="schedule"){renderGrid();renderSummary();}
+}
+
+// Client ID
+function saveClientId(){
+  const v=document.getElementById("clientIdInput").value.trim();
+  if(!v)return;
+  localStorage.setItem("gynClientId",v);
+  document.getElementById("cidSaved").textContent="✓ Client ID נשמר";
+  setTimeout(()=>document.getElementById("cidSaved").textContent="",2500);
+}
+
+// OAuth
+function signIn(){
+  const cid=localStorage.getItem("gynClientId");
+  if(!cid){alert("הזן Client ID תחילה");return;}
+  const client=google.accounts.oauth2.initTokenClient({
+    client_id:cid,
+    scope:"https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email",
+    callback:async(resp)=>{
+      if(resp.error){alert("שגיאה: "+resp.error);return;}
+      accessToken=resp.access_token;
+      const r=await fetch("https://www.googleapis.com/oauth2/v2/userinfo",{headers:{Authorization:"Bearer "+accessToken}});
+      const info=await r.json();
+      gmailUser=info.email||"";
+      document.getElementById("gmailStatus").textContent="✓ מחובר: "+gmailUser;
+      document.getElementById("gmailStatus").style.color="#27ae60";
+      document.getElementById("gmailLabel").textContent="מחובר: "+gmailUser;
+    }
+  });
+  client.requestAccessToken();
+}
+
+// Team
+function verifyManager(){
+  const v=document.getElementById("managerInput").value.trim();
+  if(!v)return;
+  managerName=v;localStorage.setItem("gynManager",v);managerVerified=true;
+  document.getElementById("managerOk").textContent="✓ גישת מנהלת אושרה";
+  document.getElementById("addStaffSection").style.display="block";
+  renderStaff();
+}
+function renderStaff(){
+  const el=document.getElementById("staffList");
+  document.getElementById("staffCount").textContent=staff.length;
+  if(!staff.length){el.innerHTML='<div style="color:#999;text-align:center;padding:16px 0;font-size:14px">אין עובדים ברשימה</div>';return;}
+  el.innerHTML=staff.map(s=>`<div class="staff-row">
+    <span class="staff-name">${s.name}</span>
+    <span class="staff-email">${s.email}</span>
+    ${managerVerified?`<button class="btn btn-red" style="padding:4px 10px;font-size:12px" onclick="removeStaff('${s.id}')">מחק</button>`:""}
+  </div>`).join("");
+}
+function addStaff(){
+  const n=document.getElementById("newName").value.trim(),e=document.getElementById("newEmail").value.trim();
+  if(!n||!e)return;
+  staff.push({id:uid(),name:n,email:e});
+  document.getElementById("newName").value="";document.getElementById("newEmail").value="";
+  renderStaff();
+}
+function removeStaff(id){staff=staff.filter(s=>s.id!==id);renderStaff();}
+function saveTeam(){
+  localStorage.setItem("gynStaff",JSON.stringify(staff));
+  document.getElementById("teamSaved").textContent="✓ הצוות נשמר";
+  setTimeout(()=>document.getElementById("teamSaved").textContent="",2500);
+}
+
+// Schedule Grid
+function getDays(){
+  const count=viewMode==="week"?7:14,days=[];
+  for(let i=0;i<count;i++){const d=new Date(weekStart);d.setDate(d.getDate()+i);days.push(d);}
+  return days;
+}
+function setView(v){
+  viewMode=v;
+  document.getElementById("btnWeek").style.background=v==="week"?"#1a3c5e":"#fff";
+  document.getElementById("btnWeek").style.color=v==="week"?"#fff":"#2d6a9f";
+  document.getElementById("btnBiweek").style.background=v==="biweek"?"#1a3c5e":"#fff";
+  document.getElementById("btnBiweek").style.color=v==="biweek"?"#fff":"#2d6a9f";
+  renderGrid();
+}
+function shiftWeek(dir){weekStart.setDate(weekStart.getDate()+dir*(viewMode==="week"?7:14));renderGrid();}
+function togglePerson(dk,sk,pid){
+  if(!schedule[dk])schedule[dk]={};
+  if(!schedule[dk][sk])schedule[dk][sk]=[];
+  const arr=schedule[dk][sk];
+  const idx=arr.indexOf(pid);
+  if(idx>=0)arr.splice(idx,1);else arr.push(pid);
+  renderGrid();renderSummary();
+}
+function renderGrid(){
+  const days=getDays();
+  const g=document.getElementById("schedGrid");
+  g.style.gridTemplateColumns=`80px repeat(${days.length},minmax(100px,1fr))`;
+  g.style.minWidth=days.length*104+"px";
+  let html=`<div class="grid-header">משמרת</div>`;
+  days.forEach(d=>html+=`<div class="grid-header">${formatDate(d)}</div>`);
+  SHIFTS.forEach(sh=>{
+    html+=`<div class="shift-label" style="background:${sh.bg};border:1.5px solid ${sh.border};color:${sh.color}"><span>${sh.label}</span><span style="font-size:9px;font-weight:400;margin-top:1px">${sh.time}</span></div>`;
+    days.forEach(d=>{
+      const dk=dateKey(d),assigned=schedule[dk]?.[sh.key]||[];
+      const tags=assigned.map(pid=>{
+        const p=staff.find(s=>s.id===pid);
+        return p?`<span class="tag" style="background:${sh.color}" onclick="togglePerson('${dk}','${sh.key}','${pid}')">${p.name} ✕</span>`:"";
+      }).join("");
+      const opts=staff.filter(s=>!assigned.includes(s.id)).map(s=>`<option value="${s.id}">${s.name}</option>`).join("");
+      const sel=opts?`<select onchange="if(this.value)togglePerson('${dk}','${sh.key}',this.value);this.value=''" style="width:100%;font-size:10px;padding:2px 3px;border-radius:5px;border:1px solid #ddd;color:#555;margin-top:3px"><option value="">+ הוסף...</option>${opts}</select>`:"";
+      html+=`<div class="shift-cell" style="border:1.5px solid ${sh.border}">${tags}${sel}</div>`;
+    });
+  });
+  g.innerHTML=html;
+}
+function renderSummary(){
+  if(!staff.length){document.getElementById("summaryWrap").style.display="none";return;}
+  document.getElementById("summaryWrap").style.display="block";
+  const days=getDays();
+  document.getElementById("summaryItems").innerHTML=staff.map(s=>{
+    const cnt=days.reduce((a,d)=>a+SHIFTS.filter(sh=>(schedule[dateKey(d)]?.[sh.key]||[]).includes(s.id)).length,0);
+    return `<div class="summary-item"><b style="color:#1a3c5e">${s.name}</b> — ${cnt} משמרות</div>`;
+  }).join("");
+}
+function saveSchedule(){
+  localStorage.setItem("gynSchedule",JSON.stringify(schedule));
+  document.getElementById("schedSaved").textContent="✓ הלוח נשמר";
+  setTimeout(()=>document.getElementById("schedSaved").textContent="",2500);
+}
+
+// ICS + Send
+function makeICS(person,shift,day){
+  const sd=new Date(day),ed=new Date(day);
+  if(shift.key==="night")ed.setDate(ed.getDate()+1);
+  const fmt=(dt,h)=>{const x=new Date(dt);x.setHours(h,0,0,0);return `${x.getFullYear()}${pad(x.getMonth()+1)}${pad(x.getDate())}T${pad(x.getHours())}0000`;};
+  return["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//GynShifts//HE",
+    "BEGIN:VEVENT",`UID:${uid()}@gynshifts`,
+    `DTSTART:${fmt(sd,shift.startH)}`,`DTEND:${fmt(shift.key==="night"?ed:sd,shift.endH)}`,
+    `SUMMARY:משמרת ${shift.label} – גינקולוגיה`,
+    `DESCRIPTION:מחלקת גינקולוגיה\\nמשמרת ${shift.label} (${shift.time})\\nמנהלת: ${managerName}`,
+    "BEGIN:VALARM","TRIGGER:-PT60M","ACTION:DISPLAY",`DESCRIPTION:תזכורת: משמרת ${shift.label} בעוד שעה`,"END:VALARM",
+    "END:VEVENT","END:VCALENDAR"].join("\r\n");
+}
+function toB64(str){return btoa(unescape(encodeURIComponent(str)));}
+function buildMime(from,to,subject,body,ics,fname){
+  const b="bnd_"+uid();
+  const msg=[`From: ${from}`,`To: ${to}`,`Subject: ${subject}`,"MIME-Version: 1.0",
+    `Content-Type: multipart/mixed; boundary="${b}"`,"",
+    `--${b}`,"Content-Type: text/plain; charset=UTF-8","Content-Transfer-Encoding: base64","",toB64(body),"",
+    `--${b}`,`Content-Type: text/calendar; charset=UTF-8; method=REQUEST; name="${fname}"`,
+    `Content-Disposition: attachment; filename="${fname}"`,"Content-Transfer-Encoding: base64","",toB64(ics),`--${b}--`].join("\r\n");
+  return btoa(unescape(encodeURIComponent(msg))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+async function sendInvites(){
+  if(!accessToken){alert("יש להתחבר עם Gmail תחילה במסך ⚙️ הגדרות");return;}
+  const btn=document.getElementById("sendBtn");
+  btn.disabled=true;btn.textContent="שולח...";
+  const logDiv=document.getElementById("sendLog");logDiv.style.display="block";
+  logDiv.innerHTML='<div style="font-weight:700;color:#1a3c5e;margin-bottom:8px">📋 דוח שליחה</div>';
+  const days=getDays();let ok=0,fail=0;
+  for(const day of days){
+    const dk=dateKey(day);
+    for(const shift of SHIFTS){
+      const people=schedule[dk]?.[shift.key]||[];
+      for(const pid of people){
+        const person=staff.find(s=>s.id===pid);if(!person)continue;
+        const ics=makeICS(person,shift,day);
+        const subject=`זימון: משמרת ${shift.label} – ${formatDate(day)}`;
+        const body=`שלום ${person.name},\n\nהנך משובץ/ת למשמרת ${shift.label} ביום ${formatDate(day)} בשעות ${shift.time}.\nתזכורת תישלח שעה לפני תחילת המשמרת.\n\nבברכה,\n${managerName}\nמנהלת מחלקת גינקולוגיה`;
+        const raw=buildMime(gmailUser,person.email,subject,body,ics,`shift_${shift.key}_${dk}.ics`);
+        try{
+          const res=await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send",{
+            method:"POST",headers:{"Authorization":"Bearer "+accessToken,"Content-Type":"application/json"},
+            body:JSON.stringify({raw})
+          });
+          if(res.ok){ok++;logDiv.innerHTML+=`<div class="log-item" style="color:#27ae60">✓ ${person.name} – משמרת ${shift.label} ${formatDate(day)}</div>`;}
+          else{const e=await res.json();fail++;logDiv.innerHTML+=`<div class="log-item" style="color:#e74c3c">✗ ${person.name} – ${e?.error?.message||"שגיאה"}</div>`;}
+        }catch(e){fail++;logDiv.innerHTML+=`<div class="log-item" style="color:#e74c3c">✗ ${person.name} – ${e.message}</div>`;}
+        await new Promise(r=>setTimeout(r,300));
+      }
+    }
+  }
+  logDiv.innerHTML+=`<div style="margin-top:8px;font-weight:700;color:#1a3c5e">סה"כ: ${ok} נשלחו, ${fail} נכשלו</div>`;
+  btn.disabled=false;btn.textContent="📨 שלח זימונים";
+}
+</script>
+</body>
+</html>
